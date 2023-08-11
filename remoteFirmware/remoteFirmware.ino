@@ -2,18 +2,10 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "bitmaps.h"
+#include "qdec.h"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
-
-
-#include "qdec.h"
-
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-// The pins for I2C are defined by the Wire-library. 
-// On an arduino UNO:       A4(SDA), A5(SCL)
-// On an arduino MEGA 2560: 20(SDA), 21(SCL)
-// On an arduino LEONARDO:   2(SDA),  3(SCL), ...
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
@@ -31,13 +23,16 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define SWZ 10
 
 typedef enum {
-  AX_X,
+  AX_X = 0,
   AX_Y,
   AX_Z
 } axisEnum;
 
 #define RES_LEVELS 4
-int currentRes = 0; // res level, higher is more resolution
+int currentRes = 0; // res level,
+// linResVals[currentRes] determines step size
+int linResVals[] = {8,4,2,1};
+int angResVals[] = {8,4,2,1};
 
 volatile unsigned int encoderCount = 32;
 volatile boolean aSet = false;
@@ -47,7 +42,7 @@ axisEnum currentAxis = AX_X;
 bool isAngle = false;
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(38400);
   
   pinMode(SWX, INPUT);
   pinMode(SWY, INPUT);
@@ -56,7 +51,6 @@ void setup() {
   pinMode(SWRES, INPUT);
   pinMode(SWCLICK, INPUT);
   
-
   attachInterrupt(digitalPinToInterrupt(SWX), handleXint, FALLING);
   attachInterrupt(digitalPinToInterrupt(SWY), handleYint, FALLING);
   attachInterrupt(digitalPinToInterrupt(SWZ), handleZint, FALLING);
@@ -64,13 +58,10 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(SWRES), handleResint, FALLING);
   attachInterrupt(digitalPinToInterrupt(SWCLICK), handleClickint, FALLING);
   
-  
   qdec.begin();
-  attachInterrupt(digitalPinToInterrupt(SWA), IsrForQDEC, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(SWB), IsrForQDEC, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(SWA), quadratureInt, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(SWB), quadratureInt, CHANGE);
   
-
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
@@ -93,7 +84,7 @@ void handleXint() {
     currentAxis = AX_X;
     updateScreen();
   }
-  Serial.println("x");
+  //Serial.println("x");
 }
 
 void handleYint() {
@@ -101,7 +92,7 @@ void handleYint() {
     currentAxis = AX_Y;
     updateScreen();
   }
-  Serial.println("y");
+  //Serial.println("y");
 }
 
 void handleZint() {
@@ -109,55 +100,52 @@ void handleZint() {
     currentAxis = AX_Z;
     updateScreen();
   }
-  Serial.println("z");
+  //Serial.println("z");
 }
 
 void handleThetaint() {
   isAngle = !isAngle;
   updateScreen();
-  Serial.println("theta");
+  //Serial.println("theta");
 }
 
 void handleResint() {
   currentRes = (currentRes+1)%RES_LEVELS;
   updateScreen();
-  Serial.println("theta");
+  //Serial.println("theta");
 }
-/*
-void handleInterruptA() {
-  if (digitalRead(SWB)) {
-    encoderCount++;
-  } 
-  else {
-    encoderCount--;
-  }
+
+void handleClickint() {
+  encoderCount = SCREEN_WIDTH/2;
   updateBar();
 }
-*/
-/*
-void handleInterruptB() {
-  bSet = digitalRead(SWB);
-  if (bSet) {
-    aSet = digitalRead(SWA);
-    if (aSet) {
-      encoderCount--;
-    } else {
-      encoderCount++;
-    }
-  } else {
-    aSet = digitalRead(SWA);
-    if (aSet) {
-      encoderCount++;
-    } else {
-      encoderCount--;
-    }
+
+void quadratureInt(void) {
+  using namespace ::SimpleHacks;
+  QDECODER_EVENT event = qdec.update();
+  int stepSize = isAngle ? angResVals[currentRes] : linResVals[currentRes];
+  char writeStr[40]; // sloppy
+  if (event & QDECODER_EVENT_CW) {
+    encoderCount += stepSize;
+    writeMoveCommand(stepSize);
+  } else if (event & QDECODER_EVENT_CCW) {
+    encoderCount -= stepSize;
+    writeMoveCommand(-stepSize);
   }
-  updateBar();
+  encoderCount = encoderCount % SCREEN_WIDTH;
+  return;
 }
-*/
+
+void writeMoveCommand(int delta) {
+  Serial.print("STEP"); Serial.print(' ');
+  Serial.print(currentAxis); Serial.print(' ');
+  Serial.print(isAngle); Serial.print(' ');
+  Serial.println(delta);
+}
+
 void updateBar() {
-  setTopBar(encoderCount*2);
-  Serial.println(encoderCount);
+  setTopBar(encoderCount);
+  //Serial.println(encoderCount);
 }
 
 void updateScreen() {
@@ -241,20 +229,7 @@ void displayUnit(const unsigned char* bitmap) {
 }
 
 void setTopBar(int thisWidth) {
-  
   display.fillRect(0,0,SCREEN_WIDTH,16, SSD1306_BLACK);
   display.fillRect(0,0,thisWidth,16, SSD1306_WHITE);
   display.display();
-}
-
-void IsrForQDEC(void) {
-  using namespace ::SimpleHacks;
-  QDECODER_EVENT event = qdec.update();
-  if (event & QDECODER_EVENT_CW) {
-    encoderCount = encoderCount + 1;
-  } else if (event & QDECODER_EVENT_CCW) {
-    encoderCount = encoderCount - 1;
-  }
-  encoderCount = encoderCount % 64;
-  return;
 }
