@@ -28,11 +28,14 @@ typedef enum {
   AX_Z
 } axisEnum;
 
-#define RES_LEVELS 4
+#define RES_LEVELS 3
 int currentRes = 0; // res level,
 // linResVals[currentRes] determines step size
-int linResVals[] = {8,4,2,1};
-int angResVals[] = {8,4,2,1};
+float linResVals[] = {1e-1,1e-2,1e-3};
+float angResVals[] = {1e-1,1e-2,1e-3};
+
+int linDirs[] = {-1, -1, -1};
+int angDirs[] = {1, -1, -1};
 
 volatile unsigned int encoderCount = 32;
 volatile boolean aSet = false;
@@ -123,7 +126,7 @@ void handleClickint() {
 void quadratureInt(void) {
   using namespace ::SimpleHacks;
   QDECODER_EVENT event = qdec.update();
-  int stepSize = isAngle ? angResVals[currentRes] : linResVals[currentRes];
+  float stepSize = isAngle ? (angResVals[currentRes]*angDirs[currentAxis]) : (linResVals[currentRes]*linDirs[currentAxis]);
   char writeStr[40]; // sloppy
   if (event & QDECODER_EVENT_CW) {
     encoderCount += stepSize;
@@ -136,15 +139,16 @@ void quadratureInt(void) {
   return;
 }
 
-void writeMoveCommand(int delta) {
+void writeMoveCommand(float delta) {
   Serial.print("STEP"); Serial.print(' ');
   Serial.print(currentAxis); Serial.print(' ');
   Serial.print(isAngle); Serial.print(' ');
-  Serial.println(delta);
+  Serial.println(delta,5);
 }
 
 void updateBar() {
-  setTopBar(encoderCount);
+  float barFraction = (currentRes + 0.5)/(float) RES_LEVELS;
+  setTopBar(barFraction * SCREEN_WIDTH);
   //Serial.println(encoderCount);
 }
 

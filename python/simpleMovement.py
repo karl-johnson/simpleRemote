@@ -17,7 +17,7 @@
 """ Useful!
 
 from pipython import GCSDevice
-pidevice = GCSDevice('C-884')
+pidevice = GCSDevice('C-887')
 pidevice.InterfaceSetupDlg()
 
 172.19.96.1
@@ -58,7 +58,7 @@ def main():
     with GCSDevice(CONTROLLERNAME) as pidevice:
         # Choose the interface according to your cabling.
 
-        pidevice.ConnectTCPIP(ipaddress='192.168.0.239')
+        pidevice.ConnectTCPIP(ipaddress='169.254.11.63')
         # pidevice.ConnectTCPIP(ipaddress='localhost')
         # pidevice.ConnectUSB(serialnum='123456789')
         # pidevice.ConnectRS232(comport=1, baudrate=115200)
@@ -84,7 +84,7 @@ def main():
         # will be stopped if they are moving and their servo will be enabled.
 
         print('initialize connected stages...')
-        pitools.startup(pidevice, stages=STAGES, refmodes=REFMODES)
+        # pitools.startup(pidevice, stages=STAGES, refmodes=REFMODES)
 
         # Now we query the allowed motion range of all connected stages.
         # GCS commands often return an (ordered) dictionary
@@ -92,7 +92,6 @@ def main():
 
         rangemin = getminpos(pidevice)
         rangemax = getmaxpos(pidevice)
-
         # The GCS commands qTMN() and qTMX() used above are query commands.
         # They don't need an argument and will then return all available
         # information, e.g. the limits for _all_ axes. With setter commands
@@ -100,27 +99,27 @@ def main():
         # a property "axes" which returns the names of all connected axes.
         # So lets move our stages...
 
-        for axis in pidevice.axes:
-            for target in (rangemin[axis], rangemax[axis]):
-                print('move axis {} to {:.2f}'.format(axis, target))
-                # pidevice.MOV(axis, target)
-                pidevice.MVR(axis, 1.0)
+        # for axis in pidevice.axes:
+        #     for target in (rangemin[axis], rangemax[axis]):
+        #         print('move axis {} to {:.2f}'.format(axis, target))
+        #         # pidevice.MOV(axis, target)
+        #         pidevice.MVR(axis, 1.0)
 
-                # To check the "on target state" of an axis there is the GCS command
-                # qONT(). But it is more convenient to just call "waitontarget".
+        #         # To check the "on target state" of an axis there is the GCS command
+        #         # qONT(). But it is more convenient to just call "waitontarget".
 
-                pitools.waitontarget(pidevice, axes=axis)
+        #         pitools.waitontarget(pidevice, axes=axis)
 
-                # GCS commands usually can be called with single arguments, with
-                # lists as arguments or with a dictionary.
-                # If a query command is called with an argument the keys in the
-                # returned dictionary resemble the arguments. If it is called
-                # without an argument the keys are always strings.
+        #         # GCS commands usually can be called with single arguments, with
+        #         # lists as arguments or with a dictionary.
+        #         # If a query command is called with an argument the keys in the
+        #         # returned dictionary resemble the arguments. If it is called
+        #         # without an argument the keys are always strings.
 
-                position = pidevice.qPOS(axis)[axis]  # query single axis
-                print('current position of axis {} is {:.2f}'.format(axis, position))
+        #         position = pidevice.qPOS(axis)[axis]  # query single axis
+        #         print('current position of axis {} is {:.2f}'.format(axis, position))
 
-        print('done')
+        # print('done')
 
 
 if __name__ == '__main__':
