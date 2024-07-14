@@ -28,11 +28,11 @@ typedef enum {
   AX_Z
 } axisEnum;
 
-#define RES_LEVELS 3
+#define RES_LEVELS 4
 int currentRes = 0; // res level,
 // linResVals[currentRes] determines step size
-float linResVals[] = {1e-1,1e-2,1e-3};
-float angResVals[] = {1e-1,1e-2,1e-3};
+float linResVals[] = {1e-0,1e-1,1e-2,1e-3};
+float angResVals[] = {1e-2,1e-3,1e-4,1e-5};
 
 int linDirs[] = {-1, -1, -1};
 int angDirs[] = {1, -1, -1};
@@ -176,11 +176,11 @@ void updateScreen() {
         displayUnit(mradBmp);
         break;
       case 2:
-        displayMult(r1000Bmp);
+        displayMult(r100Bmp);
         displayUnit(uradBmp);
         break;
       case 3:
-        displayMult(r100Bmp);
+        displayMult(r10Bmp);
         displayUnit(uradBmp);
         break;
     }
