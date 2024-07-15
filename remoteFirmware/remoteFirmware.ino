@@ -168,20 +168,20 @@ void updateScreen() {
     }
     switch(currentRes) {
       case 0:
-        displayMult(r10Bmp);
-        displayUnit(mradBmp);
+        displayMult(r1000Bmp);
+        displayUnit(mdegBmp);
         break;
       case 1:
-        displayMult(r1Bmp);
-        displayUnit(mradBmp);
+        displayMult(r100Bmp);
+        displayUnit(mdegBmp);
         break;
       case 2:
-        displayMult(r100Bmp);
-        displayUnit(uradBmp);
+        displayMult(r10Bmp);
+        displayUnit(mdegBmp);
         break;
       case 3:
-        displayMult(r10Bmp);
-        displayUnit(uradBmp);
+        displayMult(r1Bmp);
+        displayUnit(mdegBmp);
         break;
     }
   }
