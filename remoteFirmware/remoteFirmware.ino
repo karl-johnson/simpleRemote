@@ -32,7 +32,7 @@ typedef enum {
 int currentRes = 0; // res level,
 // linResVals[currentRes] determines step size
 float linResVals[] = {1e-0,1e-1,1e-2,1e-3};
-float angResVals[] = {1e-2,1e-3,1e-4,1e-5};
+float angResVals[] = {1e-0,1e-1,1e-2,1e-3};
 
 int linDirs[] = {-1, -1, -1};
 int angDirs[] = {1, -1, -1};
